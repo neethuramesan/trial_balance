@@ -44,7 +44,7 @@
         
         <br>
         
-        <div style="margin-left:18px;font-size:14px">Ledger: <b>Investments</b></div>
+        <div style="margin-left:18px;font-size:14px">Ledger:{{ledg.name}}<b> </b></div>
        
       <div style="text-align: right; margin-top:-18px;margin-right:40px;font-size:14px">{{msg1}}</div>
 <hr>
@@ -60,7 +60,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for i in voucher %}
+      {% for i in led %}
       
       <tr >
         <th  scope="row">{{i.date}}</th>
@@ -80,13 +80,13 @@
           <td></td>
           <td>Opening Balance:</td>
           <td>
-            {% if talled.type == 'Dr' %}
-            {{talled.opening_blnc}}
+            {% if ledg.type == 'Dr' %}
+            {{ledg.opening_blnc}}
             {% endif %}
           </td>
           <td >
-           {% if talled.type == 'Cr' %}
-           {{talled.opening_blnc}}
+           {% if ledg.type == 'Cr' %}
+           {{ledg.opening_blnc}}
            {% endif %}
            </td>
           <td ><center>
@@ -106,7 +106,7 @@
           <td></td>
           <td></td>
           <td>Closing Balance:</td>
-          <td>{{deb_balance}}</td>
+          <td>{{closing_balance}}</td>
           <td>{{cred_balance}}</td>
          </tr>
     </tbody>

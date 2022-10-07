@@ -1,3 +1,4 @@
+from unicodedata import name
 from django.urls import path
 from.import views
 
@@ -376,7 +377,25 @@ urlpatterns = [
     path('monthly_summary/<int:pk>',views.monthly_summary,name='monthly_summary'),
     path('ledgervouchers',views.ledgervouchers,name='ledgervouchers'),
     path('ledger_vouchers',views.ledger_vouchers,name='ledger_vouchers'),
-
+    
+    # balancesheet-Neethu
+    
+    path('investments',views.investments,name="investments"), 
+    path('ledgervouchers/<int:pk>',views.ledgervouchers,name="ledgervouchers"),
+    path('currentassets',views.currentassets,name="currentassets"),
+    path('stockgroupsummary',views.stockgroupsummary,name="stockgroupsummary"),
+    path('stockitem/<int:pk>',views.stockitem,name="stockitem"),
+    path('stockItem_monthlySummary/<int:pk>',views.stockItem_monthlySummary,name="stockItem_monthlySummary"),
+    path('stockitem_vouchersApril/<int:pk>',views.stockitem_vouchersApril,name="stockitem_vouchersApril"),
+    path('loans_ledger',views.loans_ledger,name="loans_ledger"),
+    path('loans_monthly_summary/<int:pk>',views.loans_monthly_summary,name="loans_monthly_summary"),
+    path('loans_voucher/<int:pk>',views.loans_voucher,name="loans_voucher"),
+    path('sundry_ledger',views.sundry_ledger,name="sundry_ledger"),
+    path('sundry_monthly_summary/<int:pk>',views.sundry_monthly_summary,name='sundry_monthly_summary'),
+    path('cash',views.cash,name='cash'),
+    path('cash_monthly_summary/<int:pk>',views.cash_monthly_summary,name='cash_monthly_summary'),
+    path('bank',views.bank,name="bank"),
+    path('bank_monthly_summary/<int:pk>',views.bank_monthly_summary,name="bank_monthly_summary")
 
 
 ]

@@ -1,3 +1,4 @@
+from email.policy import default
 from django.db import models
 from re import T
 # Create your models here.
@@ -6,7 +7,7 @@ from re import T
 
 class StockGroup(models.Model):
     grp_name = models.CharField(max_length=70, null=False, blank=False)
-
+    closing_balance=models.FloatField(blank=True)
     def __str__(self):
         return self.grp_name
 
@@ -33,6 +34,7 @@ class stock_item(models.Model):
 class voucherlist(models.Model):
     item = models.ForeignKey(stock_item,on_delete=models.SET_NULL, null=True) 
     party_name=models.CharField(max_length=100,null=True)
+    vouch_num=models.IntegerField(default=True)
     vouch_type=models.CharField(max_length=100,null=True)
     date=models.DateField()
     quantity=models.IntegerField()
@@ -180,6 +182,8 @@ class tally_group(models.Model):
     debit_credit = models.CharField(max_length=255)
     calculation = models.CharField(max_length=255)
     invoice = models.CharField(max_length=255)
+    def __str__(self):
+        return self.group_name
 
 class currencyAlteration(models.Model):
     company=models.ForeignKey(Companies,on_delete=models.CASCADE,blank=True,null=True)
@@ -258,51 +262,15 @@ class tally_ledger(models.Model):
     alias = models.CharField(max_length=255,null=True)
     under = models.CharField(max_length=255)
     grp = models.ForeignKey(tally_group,on_delete = models.CASCADE,null = True)
-    mname = models.CharField(max_length=255,null=True)
-    address = models.CharField(max_length=255,null=True)
-    state = models.CharField(max_length=255,null=True)
-    country = models.CharField(max_length=255,null=True)
-    pincode = models.CharField(max_length=6,null=True)
-    bank_details = models.CharField(max_length=20,null=True)
-    pan_no = models.CharField(max_length=100,null=True)
-    registration_type = models.CharField(max_length=100,null=True)
-    gst_uin = models.CharField(max_length=100,null=True)
-    set_alter_gstdetails = models.CharField(max_length=100,null=True)
     opening_blnc = models.IntegerField(null=True)
-
-    set_odl = models.CharField(max_length=255,null=True)
-    ac_holder_nm = models.CharField(max_length=255,null=True)
-    acc_no = models.CharField(max_length=255,null=True)
-    ifsc_code = models.CharField(max_length=255,null=True)
-    swift_code = models.CharField(max_length=255,null=True)
-    bank_name = models.CharField(max_length=255,null=True)
-    branch = models.CharField(max_length=255,null=True)
-    SA_cheque_bk = models.CharField(max_length=20,null=True)
-    Echeque_p = models.CharField(max_length=20,null=True)
-    SA_chequeP_con = models.CharField(max_length=20,null=True)
+    type=models.CharField(max_length=255,null=True)
+    closing_balance=models.FloatField(default=0)
     
-    type_of_ledger = models.CharField(max_length=100,null=True)
-    rounding_method = models.CharField(max_length=100,null=True)
-    rounding_limit = models.IntegerField(blank=True, null=True, default=None)
+    def __str__(self):
+        return self.name
 
-    type_duty_tax = models.CharField(max_length=100,null=True)
-    tax_type = models.CharField(max_length=100,null=True)
-    valuation_type = models.CharField(max_length=100,null=True)
-    rate_per_unit = models.IntegerField(blank=True, null=True, default=None)
-    percentage_of_calcution = models.CharField(max_length=100,null=True)
-    rond_method = models.CharField(max_length=100,null=True)
-    rond_limit = models.IntegerField(blank=True, null=True, default=None)
-
-    gst_applicable = models.CharField(max_length=100,null=True)
-    setalter_gstdetails = models.CharField(max_length=20,null=True)
-    type_of_supply = models.CharField(max_length=100,null=True)
-    assessable_value = models.CharField(max_length=100,null=True)
-    appropriate_to = models.CharField(max_length=100,null=True)
-    method_of_calculation = models.CharField(max_length=100,null=True)
-
-    balance_billbybill = models.CharField(max_length=100,null=True)
-    credit_period = models.CharField(max_length=100,null=True)
-    creditdays_voucher = models.CharField(max_length=100,null=True)
+    
+    
 
 class ledger_cheque_demension(models.Model):
     cheque_width = models.IntegerField(null=True)
@@ -814,5 +782,12 @@ class Ledger_vouchers(models.Model):
     account=models.CharField(max_length=225,null=True)
     voucher_type=models.CharField(max_length=225,null=True)
     voucher_no=models.CharField(max_length=225)
-    debit=models.CharField(max_length=225)
-    credit=models.CharField(max_length=225)
+    debit=models.IntegerField()
+    credit=models.IntegerField()
+
+
+    
+class Stock_closingbalance(models.Model):
+    stock_group=models.IntegerField(null=True)
+    stock_item=models.IntegerField(null=True)
+    closing_balance=models.FloatField()

@@ -10,6 +10,7 @@ from django.shortcuts import render,redirect
 from .models import *
 from errno import ETIME
 from datetime import date
+from django.db.models import Count
 from re import S
 from re import A, S
 from this import s
@@ -4771,9 +4772,13 @@ def balancesheet_asset(request):
             t_id = request.session['t_id']
         else:
             return redirect('/')
-        tally = Companies.objects.filter(id=t_id)
+        tally = Companies.objects.get(id=t_id)
         led=Ledger_vouchers.objects.all()
-        return render(request,'balancesheet_asset.html',{'cmp':tally,'led':led})
+        tally1=tally_ledger.objects.all()
+        assets=sum(tally1.values_list('closing_balance', flat=True))
+        print(tally.name)
+        print(tally.fin_begin)
+        return render(request,'balancesheet_asset.html',{'cmp':tally,'led':led,'assets':assets})
     else:
             return redirect('/')
 
@@ -4789,6 +4794,29 @@ def capitalacc(request):
         return render(request,'groupsummary.html',{'cmp':tally,'led':ledg})
     else:
             return redirect('/')
+        
+def investments(request):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')
+        tally = Companies.objects.filter(id=t_id)
+        ld=Ledger_vouchers.objects.all()
+        talled=tally_ledger.objects.get(name='investments')
+        balance=talled.opening_blnc
+        voucher = Ledger_vouchers.objects.all()
+        credit= sum(voucher.values_list('credit', flat=True))
+        debit= sum(voucher.values_list('debit', flat=True))
+        total_debit=balance+debit
+        print(total_debit)
+
+        deb_balance=total_debit-credit
+        
+        ledg=Ledger_vouchers.objects.raw('SELECT app1_tally_ledger.id,app1_tally_ledger.name,sum(app1_ledger_vouchers.debit) as debit,sum(app1_ledger_vouchers.credit) as credit FROM `app1_ledger_vouchers` inner join app1_tally_ledger on app1_ledger_vouchers.ledger_id=app1_tally_ledger.id group by app1_ledger_vouchers.ledger_id')
+        return render(request,'groupsummaryinvestments.html',{'cmp':tally,'led':talled,'deb_balance':deb_balance})
+    else:
+            return redirect('/')
 
 def monthly_summary(request,pk):
     if 't_id' in request.session:
@@ -4799,21 +4827,60 @@ def monthly_summary(request,pk):
         tally = Companies.objects.filter(id=t_id)  
         ledg=Ledger_vouchers.objects.raw('SELECT app1_tally_ledger.id,monthname( app1_ledger_vouchers.date) as date,case when sum(app1_ledger_vouchers.debit) =0 then 0 else sum(app1_ledger_vouchers.debit) end as debit,case when sum(app1_ledger_vouchers.credit)=0 then 0 else sum(app1_ledger_vouchers.credit) end as credit FROM `app1_ledger_vouchers` inner join app1_tally_ledger on app1_ledger_vouchers.ledger_id=app1_tally_ledger.id where app1_tally_ledger.id=3 and month(app1_ledger_vouchers.date)>=4 group by app1_ledger_vouchers.date')
         
-        ld=tally_ledger.objects.filter(id=pk)
-        return render(request,'monthlysummary.html',{'cmp':tally,'led':ledg,'ld':ld})
+        
+        
+        open=tally_ledger.objects.get(id=pk)
+        month="2022-4-01"
+        voucher = Ledger_vouchers.objects.filter(ledger=pk)
+        
+        print(voucher)
+        credit= sum(voucher.values_list('credit', flat=True))
+        print(credit)
+        debit= sum(voucher.values_list('debit', flat=True))
+        print(debit)
+        talled=tally_ledger.objects.get(name='investments')
+        balance=talled.opening_blnc
+        total_debit=balance+debit
+        if total_debit>credit:
+            deb_balance=total_debit-credit
+        else:
+            cred_balance=credit-total_debit
+        return render(request,'monthlysummary.html',{'cmp':tally,'led':ledg,'open':open,'credit':credit,'debit':debit,'deb_balance':deb_balance,'talled':talled})
     else:
-            return redirect('/')
+        return redirect('/')
 
 
-def ledgervouchers(request):
+def ledgervouchers(request,pk):
     if 't_id' in request.session:
         if request.session.has_key('t_id'):
             t_id = request.session['t_id']
         else:
             return redirect('/')
         tally = Companies.objects.filter(id=t_id)
+        comp= Companies.objects.get(id=t_id)
+        talled=tally_ledger.objects.get(name='investments')
+        balance=talled.opening_blnc
+        print(balance)
+        a=comp.fin_begin
+        month=a.month
+        if a.month==4:
+            msg1="1-Apr-2022 to 30-Apr-2022"
+        
+
+        # debit=Ledger_vouchers.objects.aggregate(Sum('debit'))
+        # credit=Ledger_vouchers.objects.aggregate(Sum('credit'))
+        
+        voucher = Ledger_vouchers.objects.filter(ledger=pk)
+        credit= sum(voucher.values_list('credit', flat=True))
+        debit= sum(voucher.values_list('debit', flat=True))
+        total_debit=balance+debit
+        print(total_debit)
+        if total_debit>credit:
+            deb_balance=total_debit-credit
+        else:
+            cred_balance=credit-total_debit
         ledg=Ledger_vouchers.objects.raw('SELECT app1_tally_ledger.id,app1_ledger_vouchers.date as date,app1_ledger_vouchers.account as account,app1_ledger_vouchers.voucher_no as voucher_no,app1_ledger_vouchers.voucher_type as voucher_type, app1_tally_ledger.name,app1_ledger_vouchers.debit as debit,app1_ledger_vouchers.credit as credit FROM `app1_ledger_vouchers` inner join app1_tally_ledger on app1_ledger_vouchers.ledger_id=app1_tally_ledger.id ')
-        return render(request,'ledgervouchers.html',{'cmp':tally,'led':ledg})
+        return render(request,'ledgervouchers.html',{'cmp':tally,'led':ledg,'comp':comp,'msg1':msg1,'talled':talled,'credit':credit,'debit':debit,'deb_balance':deb_balance, 'month':month,'voucher':voucher})
     else:
             return redirect('/')
 
@@ -4845,4 +4912,316 @@ def ledger_vouchers(request):
             return redirect('capitalacc')
         return render(request,'ledger_vouchers.html',{'cmp':tally,'led':led})
     else:
+        return redirect('/')
+def currentassets(request):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
             return redirect('/')
+        tally = Companies.objects.filter(id=t_id)
+        ld=Ledger_vouchers.objects.all()
+        # talled=tally_ledger.objects.get(company=t_id)
+        # balance=talled.opening_blnc
+        # voucher = Ledger_vouchers.objects.all()
+        # credit= sum(voucher.values_list('credit', flat=True))
+        # debit= sum(voucher.values_list('debit', flat=True))
+        # total_debit=balance+debit
+        # stockgrp=StockGroup.objects.all()
+        # balance = sum(stockgrp.values_list('closing_balance', flat=True)) 
+        
+        # print(total_debit)
+        # if total_debit>credit:
+        #     deb_balance=total_debit-credit
+        # else:
+        #     cred_balance=credit-total_debit
+        # ledg=Ledger_vouchers.objects.raw('SELECT app1_tally_ledger.id,app1_tally_ledger.name,sum(app1_ledger_vouchers.debit) as debit,sum(app1_ledger_vouchers.credit) as credit FROM `app1_ledger_vouchers` inner join app1_tally_ledger on app1_ledger_vouchers.ledger_id=app1_tally_ledger.id group by app1_ledger_vouchers.ledger_id')
+        t=tally_ledger.objects.all()
+        stocks=StockGroup.objects.all()
+        total=sum(stocks.values_list('closing_balance', flat=True))
+        total1=round(total)
+        l=tally_ledger.objects.filter(under='Loans & Advances')
+        loans=sum(l.values_list('closing_balance', flat=True))
+        s=tally_ledger.objects.filter(under='Sundry Debtors')
+        sundry=sum(s.values_list('closing_balance', flat=True))
+        c=tally_ledger.objects.filter(under='Cash in Hand')
+        cash=sum(c.values_list('closing_balance', flat=True))
+        b=tally_ledger.objects.filter(under='Bank Accounts')
+        bank=sum(b.values_list('closing_balance', flat=True))
+        grand_total=sum(t.values_list('closing_balance', flat=True))
+        return render(request,'currentassets.html',{'cmp':tally,'total':total1,'loans':loans,'sundry':sundry,'cash':cash,'bank':bank,'grand_total':grand_total})
+    else:
+        return redirect('/')
+        
+        
+def stockgroupsummary(request):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')
+        tally = Companies.objects.filter(id=t_id)
+        stockgrp=StockGroup.objects.all()
+        balance = sum(stockgrp.values_list('closing_balance', flat=True)) 
+        
+        
+    return render(request,'stockgroupsummary.html',{'cmp':tally,'stockgrp':stockgrp,'balance':balance})
+def stockitem(request,pk):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')
+        tally = Companies.objects.get(id=t_id)
+        stockgroup=StockGroup.objects.get(id=pk)
+        a=stockgroup.id
+        print(stockgroup.grp_name)
+        stockitem=stock_item.objects.get(id=pk)
+        # total= sum(stockitem.values_list('value', flat=True))
+        voucher=voucherlist.objects.filter(item=pk)
+        opening_quantity=stockitem.quantity
+        opening_value=stockitem.value
+        purchase=voucherlist.objects.filter(vouch_type='purchase')
+        quantity = sum(purchase.values_list('quantity', flat=True))
+        quantity2=quantity+opening_quantity
+        value = sum(purchase.values_list('value', flat=True))
+        value2=value+opening_value
+        sales=voucherlist.objects.filter(vouch_type='sales')
+        quantity3 = sum(sales.values_list('quantity', flat=True)) 
+        value3=sum(sales.values_list('value', flat=True))
+        if quantity2>quantity3:
+            closing_quantity=quantity2-quantity3
+        else:
+             closing_quantity=quantity3-quantity2
+        rate=stockitem.rateper 
+        rate1=sum(purchase.values_list('rateper', flat=True))
+        count2=voucherlist.objects.filter(vouch_type='purchase').count()
+        count1=count2+1
+        avg=rate+rate1
+        average=avg/count1
+        
+        closing_balance=average * closing_quantity
+        # stocks_table = Stock_closingbalance.objects.filter(stock_item=stockitem.id).exists()
+        # if stocks_table:
+        #     pass
+        # else:
+        #     stocks=Stock_closingbalance(stock_group=a,stock_item=stockitem.name,closing_balance=closing_balance)
+        #     stocks.save()
+            
+    return render(request,'stockitemsummary.html',{'cmp':tally,'stockitem':stockitem,'stockgroup':stockgroup,'closing_quantity':closing_quantity,'closing_balance':closing_balance,'average':average})
+def stockItem_monthlySummary(request,pk):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')
+        tally = Companies.objects.filter(id=t_id)
+        stockitem=stock_item.objects.get(id=pk)
+        b=stockitem.id
+        opening_quantity=stockitem.quantity
+        opening_value=stockitem.value
+        msg1="1-Apr-2022 to 30-Apr-2022"
+        voucher=voucherlist.objects.filter(item=pk)
+        purchase=voucherlist.objects.filter(vouch_type='purchase')
+        quantity = sum(purchase.values_list('quantity', flat=True))
+        quantity2=quantity+opening_quantity
+        value = sum(purchase.values_list('value', flat=True))
+        value2=value+opening_value
+        sales=voucherlist.objects.filter(vouch_type='sales')
+        quantity3 = sum(sales.values_list('quantity', flat=True)) 
+        value3=sum(sales.values_list('value', flat=True))
+        if quantity2>quantity3:
+            closing_quantity=quantity2-quantity3
+        else:
+             closing_quantity=quantity3-quantity2
+        rate=stockitem.rateper 
+        rate1=sum(purchase.values_list('rateper', flat=True))
+        count2=voucherlist.objects.filter(vouch_type='purchase').count()
+        count1=count2+1
+        avg=rate+rate1
+        average=avg/count1
+        closing_balance=average * closing_quantity
+        s=StockGroup.objects.get(id=pk)
+        g=s.id
+        print(g)
+        stocks_table = StockGroup.objects.get(id=pk)
+        
+        stocks_table.closing_balance=closing_balance
+        stocks_table.save()
+    return render(request,'stockItem_monthlySummary.html',{'cmp':tally,'st':stockitem,'opening_quantity':opening_quantity,'opening_value':opening_value,'quantity':quantity,'value':value,'quantity3':quantity3,'value3':value3,'quantity2':closing_quantity,'closing_balance':closing_balance})        
+    
+def stockitem_vouchersApril(request,pk):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')
+        tally = Companies.objects.filter(id=t_id)
+        stockitem=stock_item.objects.get(id=pk)
+        opening_quantity=stockitem.quantity
+        opening_value=stockitem.value
+        msg1="1-Apr-2022 to 30-Apr-2022"
+        voucher=voucherlist.objects.filter(item=pk)
+        purchase=voucherlist.objects.filter(vouch_type='purchase')
+        quantity = sum(purchase.values_list('quantity', flat=True))
+        quantity2=quantity+opening_quantity
+        value = sum(purchase.values_list('value', flat=True))
+        value2=value+opening_value
+        sales=voucherlist.objects.filter(vouch_type='sales')
+        quantity3 = sum(sales.values_list('quantity', flat=True)) 
+        value3=sum(sales.values_list('value', flat=True))
+        if quantity2>quantity3:
+            closing_quantity=quantity2-quantity3
+        else:
+             closing_quantity=quantity3-quantity2
+        rate=stockitem.rateper 
+        rate1=sum(purchase.values_list('rateper', flat=True))
+        count2=voucherlist.objects.filter(vouch_type='purchase').count()
+        count1=count2+1
+        avg=rate+rate1
+        average=avg/count1
+        closing_balance=average * closing_quantity
+    return render(request,'stockItem_vouchersApril.html',{'cmp':tally,'st':stockitem,'msg1':msg1,'voucher':voucher,'quantity':quantity2,'value':value2,'quantity3':quantity3,'value3':value3,'closing_quantity':closing_quantity,'closing_balance':closing_balance})        
+    
+def loans_ledger(request):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')
+        tally = Companies.objects.filter(id=t_id)
+        grp= tally_group.objects.get(group_name='Loans & Advances')
+        ledger=tally_ledger.objects.filter(grp_id=grp.id)
+        total=sum(ledger.values_list('closing_balance', flat=True))
+        return render(request,'groupsummaryloans.html',{'cmp':tally,'ledger':ledger,'total':total})
+def loans_monthly_summary(request,pk):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')  
+        tally = Companies.objects.filter(id=t_id)
+        led=tally_ledger.objects.get(id=pk)
+        led1=Ledger_vouchers.objects.filter(ledger=pk)
+        
+        led_id=Ledger_vouchers.objects.filter(ledger=pk)[0]
+        print(led_id.ledger)
+        led_name=led_id.ledger
+        ledg=tally_ledger.objects.get(name=led_name)
+        opening_balance=ledg.opening_blnc
+        credit=sum(led1.values_list('credit', flat=True))
+        debit=sum(led1.values_list('debit', flat=True))
+        balance=tally_ledger.objects.get(id=pk)
+        close_balance=balance.closing_balance
+        return render(request,'loansmonthlysummary.html',{'cmp':tally,'led':led,'opening_balance':opening_balance,'ledg':ledg,'credit':credit,'debit':debit,'close_balance':close_balance})
+    
+def loans_voucher(request,pk):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')
+        tally = Companies.objects.filter(id=t_id)
+        comp=Companies.objects.get(id=t_id)
+        led=Ledger_vouchers.objects.filter(ledger=pk)
+        
+        a=comp.fin_begin
+        month=a.month
+        if a.month==4:
+            msg1="1-Apr-2022 to 30-Apr-2022"
+        led_id=Ledger_vouchers.objects.filter(ledger=pk)[0]
+        print(led_id.ledger)
+        led_name=led_id.ledger
+        ledg=tally_ledger.objects.get(name=led_name)
+        opening_balance=ledg.opening_blnc
+        credit=sum(led.values_list('credit', flat=True))
+        debit=sum(led.values_list('debit', flat=True))
+        deb_balance=opening_balance+debit
+        closing_balance=deb_balance-credit
+        ledg.closing_balance=closing_balance
+        ledg.save()
+        return render(request,'loan_voucher.html',{'cmp':tally,'msg1':msg1,'led':led,'ledg':ledg,'credit':credit,'debit':debit,'closing_balance':closing_balance})
+ 
+def sundry_ledger(request):   
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')
+        tally = Companies.objects.filter(id=t_id)
+        grp= tally_group.objects.get(group_name='Sundry Debtors')
+        ledger=tally_ledger.objects.filter(grp_id=grp.id)
+        total=sum(ledger.values_list('closing_balance', flat=True))
+        return render(request,'sundry_ledger.html',{'cmp':tally,'ledger':ledger,'total':total})
+    
+def sundry_monthly_summary(request,pk):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')  
+        tally = Companies.objects.filter(id=t_id)
+        led=tally_ledger.objects.get(id=pk)
+        ledg=Ledger_vouchers.objects.filter(ledger=pk)
+        credit=sum(ledg.values_list('credit', flat=True))
+        debit=sum(ledg.values_list('debit', flat=True))
+        deb_balance=led.opening_blnc+debit
+        closing_balance=deb_balance-credit
+        
+        return render(request,'sundrymonthlysummary.html',{'cmp':tally,'led':led,'credit':credit,'debit':debit,'closing_balance':closing_balance,'deb_balance':deb_balance})
+ 
+def cash(request):
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')
+        tally = Companies.objects.filter(id=t_id)
+        grp= tally_group.objects.get(group_name='Cash in Hand')
+        ledger=tally_ledger.objects.filter(grp_id=grp.id)
+        total=sum(ledger.values_list('closing_balance', flat=True))
+        return render(request,'cashledger.html',{'cmp':tally,'ledger':ledger,'total':total})
+
+def cash_monthly_summary(request,pk):     
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')  
+        tally = Companies.objects.filter(id=t_id)
+        led=tally_ledger.objects.get(id=pk)
+        ledg=Ledger_vouchers.objects.filter(ledger=pk)
+        credit=sum(ledg.values_list('credit', flat=True))
+        debit=sum(ledg.values_list('debit', flat=True))
+        deb_balance=led.opening_blnc+debit
+        closing_balance=deb_balance-credit
+        
+        return render(request,'cashmonthlysummary.html',{'cmp':tally,'led':led,'credit':credit,'debit':debit,'closing_balance':closing_balance,'deb_balance':deb_balance})  
+
+def bank(request):
+   if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')
+        tally = Companies.objects.filter(id=t_id)
+        grp= tally_group.objects.get(group_name='Bank Accounts')
+        ledger=tally_ledger.objects.filter(grp_id=grp.id)
+        total=sum(ledger.values_list('closing_balance', flat=True))
+        return render(request,'bankledger.html',{'cmp':tally,'ledger':ledger,'total':total})     
+    
+def bank_monthly_summary(request,pk):  
+    if 't_id' in request.session:
+        if request.session.has_key('t_id'):
+            t_id = request.session['t_id']
+        else:
+            return redirect('/')  
+        tally = Companies.objects.filter(id=t_id)
+        led=tally_ledger.objects.get(id=pk)
+        ledg=Ledger_vouchers.objects.filter(ledger=pk)
+        credit=sum(ledg.values_list('credit', flat=True))
+        debit=sum(ledg.values_list('debit', flat=True))
+        deb_balance=led.opening_blnc+debit
+        closing_balance=deb_balance-credit
+        
+        return render(request,'bankmonthlysummary.html',{'cmp':tally,'led':led,'credit':credit,'debit':debit,'closing_balance':closing_balance,'deb_balance':deb_balance})                       

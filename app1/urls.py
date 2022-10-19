@@ -395,7 +395,15 @@ urlpatterns = [
     path('cash',views.cash,name='cash'),
     path('cash_monthly_summary/<int:pk>',views.cash_monthly_summary,name='cash_monthly_summary'),
     path('bank',views.bank,name="bank"),
-    path('bank_monthly_summary/<int:pk>',views.bank_monthly_summary,name="bank_monthly_summary")
-
-
-]
+    path('bank_monthly_summary/<int:pk>',views.bank_monthly_summary,name="bank_monthly_summary"),
+    path('trial_balance',views.trial_balance,name="trial_balance"),
+    path('furniture',views.furniture,name="furniture"),
+    path('furniture_monthly_summary/<int:pk>',views.furniture_monthly_summary,name="furniture_monthly_summary"),
+    path('trialbalance_investments',views.trialbalance_investments,name="trialbalance_investments"),
+    path('trialbalanceinvestment_monthly_summary/<int:pk>',views.trialbalanceinvestment_monthly_summary,name="trialbalanceinvestment_monthly_summary"),
+    path('trialbalance_currentassets',views.trialbalance_currentassets,name="trialbalance_currentassets"),
+    path('deposits',views.deposits,name="deposits"),
+    path('deposits_monthly_summary/<int:pk>',views.deposits_monthly_summary,name="deposits_monthly_summary"),
+    path('opening_stockgroup',views.opening_stockgroup,name="opening_stockgroup"),
+    path('opening_stockitem/<int:pk>',views.opening_stockitem,name="opening_stockitem")
+    ]

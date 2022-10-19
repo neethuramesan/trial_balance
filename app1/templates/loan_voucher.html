@@ -106,8 +106,16 @@
           <td></td>
           <td></td>
           <td>Closing Balance:</td>
-          <td>{{closing_balance}}</td>
-          <td>{{cred_balance}}</td>
+          <td>
+            {% if assets.type == 'Dr' %}
+            {{closing_balance}}
+            {% endif %}
+          </td>
+          <td >
+           {% if assets.type == 'Cr' %}
+           {{closing_balance}}
+           {% endif %}
+           </td>
          </tr>
     </tbody>
   </table>

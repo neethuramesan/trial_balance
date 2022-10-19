@@ -791,3 +791,13 @@ class Stock_closingbalance(models.Model):
     stock_group=models.IntegerField(null=True)
     stock_item=models.IntegerField(null=True)
     closing_balance=models.FloatField()
+class Trialbalance_assets(models.Model):
+    name=models.CharField(max_length=225,null=True)
+    credit=models.IntegerField(null=True)
+    debit=models.IntegerField(null=True)
+    total_debit=models.IntegerField(null=True)
+    total_credit=models.IntegerField(null=True)
+    closing_balance=models.IntegerField(null=True)
+    type=models.CharField(max_length=225,null=True)
+    ledger = models.ForeignKey(tally_ledger, on_delete=models.CASCADE, blank=True,null=True)
+    
